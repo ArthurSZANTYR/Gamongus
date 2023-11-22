@@ -19,7 +19,7 @@ static boolean doScan = false;
 static BLERemoteCharacteristic* pRemoteCharacteristic;
 static BLEAdvertisedDevice* myDevice;
 
-static void notifyCallback(
+static void notifyCallback(  //called every time that the server does a notify to the client 
   BLERemoteCharacteristic* pBLERemoteCharacteristic,
   uint8_t* pData,
   size_t length,
@@ -33,7 +33,7 @@ static void notifyCallback(
     Serial.println();
 }
 
-class MyClientCallback : public BLEClientCallbacks {
+class MyClientCallback : public BLEClientCallbacks {  
   void onConnect(BLEClient* pclient) {
   }
 
@@ -50,7 +50,7 @@ bool connectToServer() {
     BLEClient*  pClient  = BLEDevice::createClient();
     Serial.println(" - Created client");
 
-    pClient->setClientCallbacks(new MyClientCallback());
+    pClient->setClientCallbacks(new MyClientCallback());  
 
     // Connect to the remove BLE Server.
     pClient->connect(myDevice);  // if you pass BLEAdvertisedDevice instead of address, it will be recognized type of peer device address (public or private)
@@ -94,7 +94,7 @@ bool connectToServer() {
 /**
  * Scan for BLE servers and find the first one that advertises the service we are looking for.
  */
-class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {
+class MyAdvertisedDeviceCallbacks: public BLEAdvertisedDeviceCallbacks {  //client not connected yet - to scan for server
  /**
    * Called for each advertising BLE server.
    */
@@ -150,11 +150,11 @@ void loop() {
   // If we are connected to a peer BLE Server, update the characteristic each time we are reached
   // with the current time since boot.
   if (connected) {
-    String newValue = "Time since boot: " + String(millis()/1000);
-    Serial.println("Setting new characteristic value to \"" + newValue + "\"");
+//    String newValue = "Time since boot: " + String(millis()/1000);
+//    Serial.println("Setting new characteristic value to \"" + newValue + "\"");
     
     // Set the characteristic's value to be the array of bytes that is actually a string.
-    pRemoteCharacteristic->writeValue(newValue.c_str(), newValue.length());
+//    pRemoteCharacteristic->writeValue(newValue.c_str(), newValue.length());
   }else if(doScan){
     BLEDevice::getScan()->start(0);  // this is just example to start scan after disconnect, most likely there is better way to do it in arduino
   }
