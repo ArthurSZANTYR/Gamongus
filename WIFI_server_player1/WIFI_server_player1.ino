@@ -30,10 +30,10 @@ AsyncWebServer server(80);
 
 
 int numero_paquet = 0;
-void SendToServerGameState(String GameState) {
+void SendToClientGameState(String gameState) {
     numero_paquet ++;
-    server.on("/temperature", HTTP_GET, [GameState](AsyncWebServerRequest *request){
-        request->send(200, "text/plain", GameState + numero_paquet);
+    server.on("/temperature", HTTP_GET, [gameState](AsyncWebServerRequest *request){
+        request->send(200, "text/plain", gameState + numero_paquet);
     });
 }
 
@@ -52,7 +52,7 @@ void setup() {
     Serial.println(IP);
 
     // Start server
-    SendToServerGameState(game.gameStateToString());
+    SendToClientGameState(game.gameStateToString());
 
     server.begin();
 }
@@ -62,7 +62,7 @@ void loop() {
     i++;
 
     //modification
-    SendToServerGameState(String(i));
+    SendToClientGameState(String(i));
 
     delay(1000); // Attendre 1 seconde avant la prochaine mise à jour
 }
