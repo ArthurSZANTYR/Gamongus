@@ -36,13 +36,53 @@ uint32_t value = 0;
 #define SERVICE_UUID        "4fafc201-1fb5-459e-8fcc-c5c9c331914b"
 #define CHARACTERISTIC_UUID "beb5483e-36e1-4688-b7f5-ea07361b26a8"
 
+class Game {
+public:
+    std::array<int, 4> gameState = {0, 0, 0, 0}; //plateau de jeu
+
+    // Méthode pour convertir gameState en une chaîne de caractères
+    std::string gameStateToString() {
+        std::string gameStateString;
+        for (int i = 0; i < gameState.size(); ++i) {
+            gameStateString += std::to_string(gameState[i]);
+            if (i != gameState.size() - 1) {
+                gameStateString += ","; // Ajouter un espace entre les éléments pour la lisibilité
+            }
+        }
+        return gameStateString;
+    }
+};
+
+Game game;
+
+class Player {
+public:
+    String name;
+    int score;
+    int positionX;
+    int PositionY;
+};
+
+Player player1;
+
 
 class MyServerCallbacks: public BLEServerCallbacks { //callback quand a device is connected and disconected
     void onConnect(BLEServer* pServer) {
+
+      //std::string message = "Hello Gamongus - you are connected to the server";
+      //pCharacteristic->setValue(message);
+      //pCharacteristic->notify();  // Envoyer la notification au client - seulement lors de sa connexion
+
       deviceConnected = true;
+
+      //delay(100);
     };
 
     void onDisconnect(BLEServer* pServer) {
+      std::string message = "Bye Gamongus - you are disconnected to the server";
+      pCharacteristic->setValue(message);
+      pCharacteristic->notify();  // Envoyer la notification au client - seulement lors de sa deconnexion
+
       deviceConnected = false;
     }
 };
@@ -53,7 +93,7 @@ void setup() {
   Serial.begin(115200);
 
   // Create the BLE Device
-  BLEDevice::init("ESP32");
+  BLEDevice::init("ESP32_Server_GAMONGUS");
 
   // Create the BLE Server
   pServer = BLEDevice::createServer();
@@ -78,12 +118,12 @@ void setup() {
   // Start the service
   pService->start();
 
-  // Start advertising
+  // Start advertising  
   BLEAdvertising *pAdvertising = BLEDevice::getAdvertising();
   pAdvertising->addServiceUUID(SERVICE_UUID);
   pAdvertising->setScanResponse(false);
   pAdvertising->setMinPreferred(0x0);  // set value to 0x00 to not advertise this parameter
-  BLEDevice::startAdvertising();
+  BLEDevice::startAdvertising(); // -> Start to listen to device to scan
   Serial.println("Waiting a client connection to notify...");
 }
 
@@ -93,8 +133,8 @@ void loop() {
     if (deviceConnected) {
         //Serial.println("one client connected");
 
-        std::string message = "Hello Gamongus";
-        pCharacteristic->setValue(message);
+        std::string gameStateStr = game.gameStateToString();
+        pCharacteristic->setValue(gameStateStr);
         pCharacteristic->notify();  // there is an update - > notify the client
         value++;
         delay(100); // bluetooth stack will go into congestion, if too many packets are sent, in 6 hours test i was able to go as low as 3ms
