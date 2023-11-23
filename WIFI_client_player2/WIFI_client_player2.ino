@@ -1,87 +1,58 @@
-/*
-  Rui Santos
-  Complete project details at https://RandomNerdTutorials.com/esp32-client-server-wi-fi/
-  
-  Permission is hereby granted, free of charge, to any person obtaining a copy
-  of this software and associated documentation files.
-  
-  The above copyright notice and this permission notice shall be included in all
-  copies or substantial portions of the Software.
-*/
-
 #include <WiFi.h>
-#include <HTTPClient.h>
+WiFiClient client;
 
-const char* ssid = "ESP32-Access-Point-GAMONGUS";
-//const char* password = "123456789";
-
-//Your IP address or domain name with URL path
-const char* serverNameTemp = "http://192.168.4.1/temperature";
-//const char* serverNameHumi = "http://192.168.4.1/humidity";
-//const char* serverNamePres = "http://192.168.4.1/pressure";
-
-String temperature;
-String humidity;
-String pressure;
-
-unsigned long previousMillis = 0;
-const long interval = 5000; 
+const char* serverIP = "172.20.10.9"; // Remplacez par l'adresse IP du serveur ESP32
+const int serverPort = 80; // Port du serveur
 
 void setup() {
   Serial.begin(115200);
-  
-  WiFi.begin(ssid);   //, password);
-  Serial.println("Connecting");
-  while(WiFi.status() != WL_CONNECTED) { 
-    delay(500);
-    Serial.print(".");
-  }
-  Serial.println("");
-  Serial.print("Connected to WiFi network with IP Address: ");
-  Serial.println(WiFi.localIP());
-}
+  WiFi.begin("iPhone de Arthur", "1jusqua8"); // Connectez-vous au même réseau WiFi que le serveur
 
-void loop() {
-  unsigned long currentMillis = millis();
-  
-  if(currentMillis - previousMillis >= interval) {
-     // Check WiFi connection status
-    if(WiFi.status()== WL_CONNECTED ){ 
-      temperature = httpGETRequest(serverNameTemp);
-      Serial.println("Temperature: " + temperature);
-      
-      // save the last HTTP GET Request
-      previousMillis = currentMillis;
-    }
-    else {
-      Serial.println("WiFi Disconnected");
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(1000);
+    Serial.println("Connexion au WiFi...");
+  }
+
+  Serial.println("Connecté au réseau WiFi");
+
+  // Connexion au serveur
+  Serial.println("Tentative de connexion au serveur...");
+  int attempts = 0;
+  while (!client.connect(serverIP, serverPort)) {
+    attempts++;
+    Serial.println("Impossible de se connecter au serveur !");
+    Serial.println("Nouvelle tentative dans 1 seconde...");
+    delay(1000);
+    if (attempts > 10) {
+      Serial.println("Échec de la connexion après plusieurs tentatives.");
+      break;
     }
   }
-}
-
-String httpGETRequest(const char* serverName) {
-  WiFiClient client;
-  HTTPClient http;
     
-  // Your Domain name with URL path or IP address with path
-  http.begin(client, serverName);
-  
-  // Send HTTP POST request
-  int httpResponseCode = http.GET();
-  
-  String payload = "--"; 
-  
-  if (httpResponseCode>0) {
-    Serial.print("HTTP Response code: ");
-    Serial.println(httpResponseCode);
-    payload = http.getString();
+  if (client.connected()) {
+    Serial.println("Connecté au serveur !");
+  } else {
+    Serial.println("Échec de la connexion au serveur !");
   }
-  else {
-    Serial.print("Error code: ");
-    Serial.println(httpResponseCode);
-  }
-  // Free resources
-  http.end();
+}
 
-  return payload;
+int num_paquet = 0;
+void loop() {
+  num_paquet+=1;
+  if (client.connected()) {
+    client.print(String(2) + " " + String(6) + " num paquet : "+ num_paquet + "\n");
+    //while (client.available()) {
+    //  int data = client.parseInt(); // Lire les données envoyées par le client
+    //  Serial.println(data);
+    while (client.available() > 0) {
+      char receivedChar = client.read();
+      Serial.print(receivedChar);
+      }
+    
+  } else {
+    Serial.println("Connexion perdue. Tentative de reconnexion...");
+    client.connect(serverIP, serverPort);
+  }
+  Serial.println("loop");
+  delay(100);
 }
