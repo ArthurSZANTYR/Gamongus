@@ -24,7 +24,7 @@ void loop() {
   num_paquet+=1;
   WiFiClient client = server.available();
   if (client && client.connected()) {
-    Serial.println("Client connecté !");
+    //Serial.println("Client connecté !");
     //while (client.available()) {
     //  int data = client.parseInt(); // Lire les données envoyées par le client
     //  Serial.println(data);
@@ -34,7 +34,7 @@ void loop() {
       Serial.print(receivedChar);
     }
     client.print(String(1) + " " + String(4) + " num paquet : "+ num_paquet + "\n"); // Envoyer des données au client
-    Serial.print("loop");
+    //Serial.print("loop");
   }
   delay(100);
 }
