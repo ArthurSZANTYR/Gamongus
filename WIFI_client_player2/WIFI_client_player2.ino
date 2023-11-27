@@ -7,7 +7,7 @@
 
 WiFiClient client;
 
-const char* serverIP = "172.20.10.10"; // Remplacez par l'adresse IP du serveur ESP32
+const char* serverIP = "172.20.10.11"; // Remplacez par l'adresse IP du serveur ESP32
 const int serverPort = 80; // Port du serveur
 
 // Paramètres OLED
@@ -42,7 +42,7 @@ Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 int x = 3*SCREEN_WIDTH / 4 ;
 int y = SCREEN_HEIGHT / 2;
 
-int server_playerY = 0; // Position du serveur
+int server_playerY = SCREEN_HEIGHT / 2; // Position du serveur
 int server_playerX = SCREEN_WIDTH / 4; // Position du serveur
 
 int radius = 5;
@@ -122,30 +122,39 @@ void loop() {
 
   num_paquet+=1;
   if (client.connected()) {
-    client.print(String(y) + " num paquet : "+ num_paquet + "\n");
+    client.print(String(y) + "; num paquet : "+ num_paquet + "\n");
     //while (client.available()) {
     //  int data = client.parseInt(); // Lire les données envoyées par le client
     //  Serial.println(data);
+
+    String receivedData = "";
     while (client.available() > 0) {
-      char receivedChar = client.read();
+      char receivedChar = client.read(); //données recues de l'autre joueur
       Serial.print(receivedChar);
+      receivedData += receivedChar; // Ajouter le caractère à la variable
       }
+
+    int pos = receivedData.indexOf(";");   //on recupere seulement la donnée Y de l'autre joueur
+    if (pos != -1) {
+    String sub = receivedData.substring(0, pos); // Extraction de la sous-chaîne après ';'
+    Serial.println(sub);
+    server_playerY = sub.toInt();
+    } 
     
   } else {
-    Serial.println("Connexion perdue. Tentative de reconnexion...");
+    //Serial.println("Connexion perdue. Tentative de reconnexion...");
     client.connect(serverIP, serverPort);
   }
 
   updateDisplay();
 
-  Serial.println("loop");
+  //Serial.println("loop");
   delay(100);
 }
 
 void updateDisplay() {
   display.clearDisplay();
-  display.drawLine(server_playerX - radius, server_playerY, server_playerX + radius, server_playerY, SSD1306_WHITE);
-  display.drawLine(server_playerX, server_playerY - radius, server_playerX, server_playerY + radius, SSD1306_WHITE);
+  display.drawCircle(server_playerX, server_playerY, radius, SSD1306_WHITE);
   display.drawCircle(x, y, radius, SSD1306_WHITE);
   display.display();
 }
