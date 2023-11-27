@@ -49,6 +49,8 @@ int radius = 5;
 int deltaX = 0;
 int deltaY = 0;
 
+uint8_t ball_x = 64, ball_y = 32;
+
 void setup() {
   Serial.begin(115200);
 
@@ -136,9 +138,22 @@ void loop() {
 
     int pos = receivedData.indexOf(";");   //on recupere seulement la donnée Y de l'autre joueur
     if (pos != -1) {
-    String sub = receivedData.substring(0, pos); // Extraction de la sous-chaîne après ';'
-    Serial.println(sub);
-    server_playerY = sub.toInt();
+    String new_server_player1_Y = receivedData.substring(0, pos); // Extraction de la sous-chaîne après ';'
+    Serial.println(new_server_player1_Y);
+    server_playerY = new_server_player1_Y.toInt();
+    receivedData= receivedData.substring(pos + 1);
+
+    pos = receivedData.indexOf(";");
+    String new_ball_Y = receivedData.substring(0, pos); //extraction de la position de la balle X
+    Serial.println(new_ball_Y);
+    ball_y = new_ball_Y.toInt();
+    receivedData= receivedData.substring(pos + 1);
+
+    pos = receivedData.indexOf(";");
+    String new_ball_X = receivedData.substring(0, pos); //extraction de la position de la balle Y
+    Serial.println(new_ball_X);
+    ball_x = new_ball_X.toInt();
+    
     } 
     
   } else {
@@ -154,7 +169,8 @@ void loop() {
 
 void updateDisplay() {
   display.clearDisplay();
-  display.drawCircle(server_playerX, server_playerY, radius, SSD1306_WHITE);
-  display.drawCircle(x, y, radius, SSD1306_WHITE);
+  display.drawFastVLine(server_playerX, server_playerY, radius, SSD1306_WHITE);
+  display.drawFastVLine(x, y, radius, SSD1306_WHITE);
+  display.drawPixel(ball_y, ball_x, WHITE);
   display.display();
 }

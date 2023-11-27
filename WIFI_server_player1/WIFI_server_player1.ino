@@ -37,13 +37,17 @@ Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
 
 // Positions et mouvements
-int server_playerX = SCREEN_WIDTH / 4;  //player 1 (server)
-int server_playerY = SCREEN_HEIGHT / 2;
+int server_player1_X = SCREEN_WIDTH / 4;  //player 1 (server)
+int server_player1_Y = SCREEN_HEIGHT / 2;
 
-int clientX = 3*SCREEN_WIDTH / 4 , clientY = SCREEN_HEIGHT / 2; // Position du client - player 2
-int radius = 5;
+int client_player2_X = 3*SCREEN_WIDTH / 4 , client_player2_Y = SCREEN_HEIGHT / 2; // Position du client - player 2
+int paddle_size = 5;
 int deltaX = 0;
 int deltaY = 0;
+
+uint8_t ball_x = 64, ball_y = 32;
+uint8_t ball_dir_x = 1, ball_dir_y = 1;
+unsigned long ball_update;
 
 
 void setup() {
@@ -100,8 +104,8 @@ void loop() {
       default: deltaX = 0; deltaY = 0; break;
     }
   }
-  //x = constrain(x + deltaX, radius, SCREEN_WIDTH - radius);
-  server_playerY = constrain(server_playerY + deltaY, radius, SCREEN_HEIGHT - radius);
+  //x = constrain(x + deltaX, paddle_size, SCREEN_WIDTH - paddle_size);
+  server_player1_Y = constrain(server_player1_Y + deltaY, paddle_size, SCREEN_HEIGHT - paddle_size);
 
 
   WiFiClient client = server.available();
@@ -111,7 +115,7 @@ void loop() {
     //  int data = client.parseInt(); // Lire les données envoyées par le client
     //  Serial.println(data);
     //}
-    client.print(String(server_playerY) + "; num paquet : "+ num_paquet + "\n");
+    client.print(String(server_player1_Y) + ";" + String(ball_x) + ";" + String(ball_y) + "; num paquet : "+ num_paquet + "\n");
 
     String receivedData = "";
     while (client.available() > 0) {
@@ -124,9 +128,27 @@ void loop() {
     if (pos != -1) {
     String sub = receivedData.substring(0, pos); // Extraction de la sous-chaîne après ';'
     Serial.println(sub);
-    clientY = sub.toInt();
+    client_player2_Y = sub.toInt();
 
   }
+
+
+  //ball update
+  uint8_t new_x = ball_x + ball_dir_x;
+  uint8_t new_y = ball_y + ball_dir_y;
+  // Check if we hit the vertical walls
+  if(new_x == 0 || new_x == 127) {
+      ball_dir_x = -ball_dir_x;
+      new_x += ball_dir_x + ball_dir_x;
+  }
+  // Check if we hit the horizontal walls.
+  if(new_y == 0 || new_y == 63) {
+      ball_dir_y = -ball_dir_y;
+      new_y += ball_dir_y + ball_dir_y;
+  }
+  ball_x = new_x;
+  ball_y = new_y;
+
   updateDisplay();
   delay(100);
 }
@@ -134,9 +156,10 @@ void loop() {
 
 void updateDisplay() {
   display.clearDisplay();
-  //display.drawLine(server_playerX - radius, server_playerY, server_playerX + radius, server_playerY, SSD1306_WHITE);
-  //display.drawLine(server_playerX, server_playerY - radius, server_playerX, server_playerY + radius, SSD1306_WHITE);
-  display.drawCircle(server_playerX, server_playerY, radius, SSD1306_WHITE);
-  display.drawCircle(clientX, clientY, radius, SSD1306_WHITE);
+  //display.drawLine(server_player1_X - paddle_size, server_player1_Y, server_player1_X + paddle_size, server_player1_Y, SSD1306_WHITE);
+  //display.drawLine(server_player1_X, server_player1_Y - paddle_size, server_player1_X, server_player1_Y + paddle_size, SSD1306_WHITE);
+  display.drawFastVLine(server_player1_X, server_player1_Y, paddle_size, SSD1306_WHITE);
+  display.drawFastVLine(client_player2_X, client_player2_Y, paddle_size, SSD1306_WHITE);
+  display.drawPixel(ball_x, ball_y, WHITE);
   display.display();
 }
