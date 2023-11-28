@@ -39,15 +39,16 @@ char keys[ROWS][COLS] = {
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
 // Positions et mouvements
-int x = 3*SCREEN_WIDTH / 4 ;
-int y = SCREEN_HEIGHT / 2;
+int client_player2_X = 3*SCREEN_WIDTH / 4 ;
+int client_player2_Y = SCREEN_HEIGHT / 2;
 
-int server_playerY = SCREEN_HEIGHT / 2; // Position du serveur
-int server_playerX = SCREEN_WIDTH / 4; // Position du serveur
+int server_player1_Y = SCREEN_HEIGHT / 2; // Position du serveur
+int server_player1_X = SCREEN_WIDTH / 4; // Position du serveur
 
-int radius = 5;
+int paddle_size = 5;
 int deltaX = 0;
 int deltaY = 0;
+uint8_t vitesse_delta = 4;
 
 uint8_t ball_x = 64, ball_y = 32;
 
@@ -108,39 +109,42 @@ void setup() {
 
 int num_paquet = 0;
 void loop() {
-   char key = keypad.getKey();
+  char key = keypad.getKey();
   if (key) {
     switch (key) {
-      case 'U': deltaY = -1; deltaX = 0; break;
-      case 'D': deltaY = 1; deltaX = 0; break;
+      case 'U': deltaY = -1*vitesse_delta; deltaX = 0; break;
+      case 'D': deltaY = 1*vitesse_delta; deltaX = 0; break;
       //case 'L': deltaX = -1; deltaY = 0; break;
       //case 'R': deltaX = 1; deltaY = 0; break;
       default: deltaX = 0; deltaY = 0; break;
     }
+    client_player2_Y = constrain(client_player2_Y + deltaY, paddle_size, SCREEN_HEIGHT - paddle_size);
   }
-  //x = constrain(x + deltaX, radius, SCREEN_WIDTH - radius);
-  y = constrain(y + deltaY, radius, SCREEN_HEIGHT - radius);
+  //x = constrain(x + deltaX, paddle_size, SCREEN_WIDTH - paddle_size);
+  
 
 
   num_paquet+=1;
   if (client.connected()) {
-    client.print(String(y) + "; num paquet : "+ num_paquet + "\n");
+    client.print(String(client_player2_Y) + "; num paquet : "+ num_paquet + "\n");
     //while (client.available()) {
     //  int data = client.parseInt(); // Lire les données envoyées par le client
     //  Serial.println(data);
 
     String receivedData = "";
-    while (client.available() > 0) {
-      char receivedChar = client.read(); //données recues de l'autre joueur
-      Serial.print(receivedChar);
-      receivedData += receivedChar; // Ajouter le caractère à la variable
+    if (client.available() > 0){
+      while (client.available() > 0) {
+        char receivedChar = client.read(); //données recues de l'autre joueur
+        Serial.print(receivedChar);
+        receivedData += receivedChar; // Ajouter le caractère à la variable
       }
+    }
 
     int pos = receivedData.indexOf(";");   //on recupere seulement la donnée Y de l'autre joueur
     if (pos != -1) {
     String new_server_player1_Y = receivedData.substring(0, pos); // Extraction de la sous-chaîne après ';'
     Serial.println(new_server_player1_Y);
-    server_playerY = new_server_player1_Y.toInt();
+    server_player1_Y = new_server_player1_Y.toInt();
     receivedData= receivedData.substring(pos + 1);
 
     pos = receivedData.indexOf(";");
@@ -169,8 +173,8 @@ void loop() {
 
 void updateDisplay() {
   display.clearDisplay();
-  display.drawFastVLine(server_playerX, server_playerY, radius, SSD1306_WHITE);
-  display.drawFastVLine(x, y, radius, SSD1306_WHITE);
+  display.drawFastVLine(server_player1_X, server_player1_Y, paddle_size, SSD1306_WHITE);
+  display.drawFastVLine(client_player2_X, client_player2_Y, paddle_size, SSD1306_WHITE);
   display.drawPixel(ball_y, ball_x, WHITE);
   display.display();
 }

@@ -44,11 +44,11 @@ int client_player2_X = 3*SCREEN_WIDTH / 4 , client_player2_Y = SCREEN_HEIGHT / 2
 int paddle_size = 5;
 int deltaX = 0;
 int deltaY = 0;
+uint8_t vitesse_delta = 4;
 
 uint8_t ball_x = 64, ball_y = 32;
-uint8_t ball_dir_x = 1, ball_dir_y = 1;
-unsigned long ball_update;
-
+uint8_t vitesse_ball = 2;
+uint8_t ball_dir_x = 1*vitesse_ball, ball_dir_y = 1*vitesse_ball;
 
 void setup() {
   Serial.begin(115200);
@@ -97,15 +97,16 @@ void loop() {
   char key = keypad.getKey();
   if (key) {
     switch (key) {
-      case 'U': deltaY = -1; deltaX = 0; break;
-      case 'D': deltaY = 1; deltaX = 0; break;
+      case 'U': deltaY = -1*vitesse_delta; deltaX = 0; break;
+      case 'D': deltaY = 1*vitesse_delta; deltaX = 0; break;
       //case 'L': deltaX = -1; deltaY = 0; break;
       //case 'R': deltaX = 1; deltaY = 0; break;
       default: deltaX = 0; deltaY = 0; break;
     }
+    server_player1_Y = constrain(server_player1_Y + deltaY, paddle_size, SCREEN_HEIGHT - paddle_size);
   }
   //x = constrain(x + deltaX, paddle_size, SCREEN_WIDTH - paddle_size);
-  server_player1_Y = constrain(server_player1_Y + deltaY, paddle_size, SCREEN_HEIGHT - paddle_size);
+  
 
 
   WiFiClient client = server.available();
@@ -118,10 +119,12 @@ void loop() {
     client.print(String(server_player1_Y) + ";" + String(ball_x) + ";" + String(ball_y) + "; num paquet : "+ num_paquet + "\n");
 
     String receivedData = "";
-    while (client.available() > 0) {
-      char receivedChar = client.read();
-      Serial.print(receivedChar);
-      receivedData += receivedChar; // Ajouter le caractère à la variable
+    if (client.available() > 0){
+      while (client.available() > 0) {
+        char receivedChar = client.read();
+        Serial.print(receivedChar);
+        receivedData += receivedChar; // Ajouter le caractère à la variable
+      }
     }
 
     int pos = receivedData.indexOf(";");   //on recupere seulement la donnée Y de l'autre joueur
@@ -137,15 +140,27 @@ void loop() {
   uint8_t new_x = ball_x + ball_dir_x;
   uint8_t new_y = ball_y + ball_dir_y;
   // Check if we hit the vertical walls
-  if(new_x == 0 || new_x == 127) {
+  if(new_x <= 0 || new_x >= 127) {
       ball_dir_x = -ball_dir_x;
       new_x += ball_dir_x + ball_dir_x;
   }
   // Check if we hit the horizontal walls.
-  if(new_y == 0 || new_y == 63) {
+  if(new_y <= 0 || new_y >= 63) {
       ball_dir_y = -ball_dir_y;
       new_y += ball_dir_y + ball_dir_y;
   }
+   // Check if we hit the player1 paddle
+  if(new_x == server_player1_X && new_y >= server_player1_Y && new_y <= server_player1_Y + paddle_size){
+      ball_dir_x = -ball_dir_x;
+      new_x += ball_dir_x + ball_dir_x;
+  }
+  // Check if we hit the player2 paddle
+  if(new_x == client_player2_X && new_y >= client_player2_Y && new_y <= client_player2_Y + paddle_size) {
+      ball_dir_x = -ball_dir_x;
+      new_x += ball_dir_x + ball_dir_x;
+  }
+
+
   ball_x = new_x;
   ball_y = new_y;
 
