@@ -2,9 +2,7 @@
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <Keypad.h>
-
 #include <WiFi.h>
-WiFiServer server(80);
 
 // Paramètres OLED
 #define SCREEN_WIDTH 128
@@ -13,9 +11,11 @@ WiFiServer server(80);
 #define SCL_PIN 6
 #define OLED_RESET -1
 
+// Création du serveur
+WiFiServer server(80);
+
 // Création de l'affichage OLED
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
-
 
 // Paramètres de la clé
 #define O_1 20
@@ -24,6 +24,7 @@ Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 #define I_1 7
 #define I_2 8
 #define I_3 9
+
 const byte ROWS = 3;
 const byte COLS = 3;
 byte rowPins[ROWS] = {O_1, O_2, O_3};
@@ -35,12 +36,13 @@ char keys[ROWS][COLS] = {
 };
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
-
 // Positions et mouvements
-int server_player1_X = SCREEN_WIDTH / 4;  //player 1 (server)
+int server_player1_X = SCREEN_WIDTH / 4;  // Player 1 (serveur)
 int server_player1_Y = SCREEN_HEIGHT / 2;
 
-int client_player2_X = 3*SCREEN_WIDTH / 4 , client_player2_Y = SCREEN_HEIGHT / 2; // Position du client - player 2
+int client_player2_X = 3 * SCREEN_WIDTH / 4;
+int client_player2_Y = SCREEN_HEIGHT / 2;  // Position du client - Player 2
+
 int paddle_size = 5;
 int deltaX = 0;
 int deltaY = 0;
@@ -48,8 +50,9 @@ uint8_t vitesse_delta = 4;
 
 uint8_t ball_x = 64, ball_y = 32;
 uint8_t vitesse_ball = 2;
-uint8_t ball_dir_x = 1*vitesse_ball, ball_dir_y = 1*vitesse_ball;
+uint8_t ball_dir_x = 1 * vitesse_ball, ball_dir_y = 1 * vitesse_ball;
 
+// Initialisation
 void setup() {
   Serial.begin(115200);
 
@@ -58,123 +61,124 @@ void setup() {
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(SSD1306_WHITE);
-  display.setCursor(0,0);
+  display.setCursor(0, 0);
 
-  WiFi.begin("iPhone de Arthur", "1jusqua8");
-  Serial.println("hello");
-  while (WiFi.status() != WL_CONNECTED) {
-    display.clearDisplay();
-    display.setCursor(0,0);
-    display.print("Connexion WiFi...");
-    display.display();
-    Serial.println("Not connected to WiFi");
-    delay(500);
-  }
-
-
-  IPAddress IP = WiFi.localIP();
-  Serial.print("Adresse IP du serveur : ");
-  Serial.println(IP);
-
-  display.clearDisplay();
-  display.setCursor(0,0);
-  display.print("Connecte a ");
-  display.println("iPhone de Arthur");
-  display.print("IP: ");
-  //display.println(WiFi.localIP());
-  display.println(IP);
-  display.display();
-
-  delay(2000); // Afficher l'adresse IP pendant 2 secondes
+  connectToWiFi();
+  displayIP();
 
   server.begin();
 }
 
-int num_paquet = 0;
+// Boucle principale
 void loop() {
-  num_paquet+=1;
-
   char key = keypad.getKey();
+  processKeypadInput(key);
+
+  WiFiClient client = server.available();
+  if (client && client.connected()) {
+    sendDataToClient(client);
+    receiveDataFromClient(client);
+    updateBallPosition();
+    updateDisplay();
+    delay(100);
+  }
+}
+
+// Connexion au réseau WiFi
+void connectToWiFi() {
+  WiFi.begin("iPhone de Arthur", "1jusqua8");
+  while (WiFi.status() != WL_CONNECTED) {
+    display.clearDisplay();
+    display.setCursor(0, 0);
+    display.print("Connexion WiFi...");
+    display.display();
+    delay(500);
+  }
+  displayIP();
+  delay(2000);
+}
+
+// Affichage de l'adresse IP
+void displayIP() {
+  IPAddress IP = WiFi.localIP();
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.print("Connecte a ");
+  display.println("iPhone de Arthur");
+  display.print("IP: ");
+  display.println(IP);
+  display.display();
+}
+
+// Traitement des entrées du clavier
+void processKeypadInput(char key) {
   if (key) {
     switch (key) {
-      case 'U': deltaY = -1*vitesse_delta; deltaX = 0; break;
-      case 'D': deltaY = 1*vitesse_delta; deltaX = 0; break;
-      //case 'L': deltaX = -1; deltaY = 0; break;
-      //case 'R': deltaX = 1; deltaY = 0; break;
+      case 'U': deltaY = -1 * vitesse_delta; deltaX = 0; break;
+      case 'D': deltaY = 1 * vitesse_delta; deltaX = 0; break;
       default: deltaX = 0; deltaY = 0; break;
     }
     server_player1_Y = constrain(server_player1_Y + deltaY, paddle_size, SCREEN_HEIGHT - paddle_size);
   }
-  //x = constrain(x + deltaX, paddle_size, SCREEN_WIDTH - paddle_size);
-  
+}
 
+// Envoi de données au client
+void sendDataToClient(WiFiClient &client) {
+  int num_paquet = 0;
+  num_paquet += 1;
+  client.print(String(server_player1_Y) + ";" + String(ball_x) + ";" + String(ball_y) + "; num paquet : " + num_paquet + "\n");
+}
 
-  WiFiClient client = server.available();
-  if (client && client.connected()) {
-    //Serial.println("Client connecté !");
-    //while (client.available()) {
-    //  int data = client.parseInt(); // Lire les données envoyées par le client
-    //  Serial.println(data);
-    //}
-    client.print(String(server_player1_Y) + ";" + String(ball_x) + ";" + String(ball_y) + "; num paquet : "+ num_paquet + "\n");
-
-    String receivedData = "";
-    if (client.available() > 0){
-      while (client.available() > 0) {
-        char receivedChar = client.read();
-        Serial.print(receivedChar);
-        receivedData += receivedChar; // Ajouter le caractère à la variable
-      }
+// Réception de données depuis le client
+void receiveDataFromClient(WiFiClient &client) {
+  String receivedData = "";
+  if (client.available() > 0) {
+    while (client.available() > 0) {
+      char receivedChar = client.read();
+      receivedData += receivedChar;
     }
-
-    int pos = receivedData.indexOf(";");   //on recupere seulement la donnée Y de l'autre joueur
-    if (pos != -1) {
-    String sub = receivedData.substring(0, pos); // Extraction de la sous-chaîne après ';'
-    Serial.println(sub);
-    client_player2_Y = sub.toInt();
-
   }
+  int pos = receivedData.indexOf(";");
+  if (pos != -1) {
+    String sub = receivedData.substring(0, pos);
+    client_player2_Y = sub.toInt();
+  }
+}
 
-
-  //ball update
+// Mise à jour de la position de la balle
+void updateBallPosition() {
   uint8_t new_x = ball_x + ball_dir_x;
   uint8_t new_y = ball_y + ball_dir_y;
-  // Check if we hit the vertical walls
-  if(new_x <= 0 || new_x >= 127) {
-      ball_dir_x = -ball_dir_x;
-      new_x += ball_dir_x + ball_dir_x;
+
+  // Collision avec les murs
+  if (new_x <= 0 || new_x >= 127) {
+    ball_dir_x = -ball_dir_x;
+    new_x += ball_dir_x + ball_dir_x;
   }
-  // Check if we hit the horizontal walls.
-  if(new_y <= 0 || new_y >= 63) {
-      ball_dir_y = -ball_dir_y;
-      new_y += ball_dir_y + ball_dir_y;
-  }
-   // Check if we hit the player1 paddle
-  if(new_x == server_player1_X && new_y >= server_player1_Y && new_y <= server_player1_Y + paddle_size){
-      ball_dir_x = -ball_dir_x;
-      new_x += ball_dir_x + ball_dir_x;
-  }
-  // Check if we hit the player2 paddle
-  if(new_x == client_player2_X && new_y >= client_player2_Y && new_y <= client_player2_Y + paddle_size) {
-      ball_dir_x = -ball_dir_x;
-      new_x += ball_dir_x + ball_dir_x;
+  if (new_y <= 0 || new_y >= 63) {
+    ball_dir_y = -ball_dir_y;
+    new_y += ball_dir_y + ball_dir_y;
   }
 
+  // Collision avec les raquettes des joueurs
+  if (new_x == server_player1_X && new_y >= server_player1_Y && new_y <= server_player1_Y + paddle_size) {
+    ball_dir_x = -ball_dir_x;
+    new_x += ball_dir_x + ball_dir_x;
+  }
+  if (new_x == client_player2_X && new_y >= client_player2_Y && new_y <= client_player2_Y + paddle_size) {
+    ball_dir_x = -ball_dir_x;
+    new_x += ball_dir_x + ball_dir_x;
+  }
 
   ball_x = new_x;
   ball_y = new_y;
-
-  updateDisplay();
-  delay(100);
-}
 }
 
+// Mise à jour de l'affichage sur l'écran OLED
 void updateDisplay() {
   display.clearDisplay();
-  //display.drawLine(server_player1_X - paddle_size, server_player1_Y, server_player1_X + paddle_size, server_player1_Y, SSD1306_WHITE);
-  //display.drawLine(server_player1_X, server_player1_Y - paddle_size, server_player1_X, server_player1_Y + paddle_size, SSD1306_WHITE);
   display.drawFastVLine(server_player1_X, server_player1_Y, paddle_size, SSD1306_WHITE);
   display.drawFastVLine(client_player2_X, client_player2_Y, paddle_size, SSD1306_WHITE);
-  display.drawPixel(ball_x, ball_y, WHITE);
+  display.drawPixel(ball_x, ball_y, SSD1306_WHITE);
   display.display();
 }

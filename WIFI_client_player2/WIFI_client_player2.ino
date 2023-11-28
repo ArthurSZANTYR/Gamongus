@@ -1,13 +1,12 @@
 #include <WiFi.h>
-
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <Keypad.h>
 
+// Configuration de la connexion au serveur
 WiFiClient client;
-
-const char* serverIP = "172.20.10.11"; // Remplacez par l'adresse IP du serveur ESP32
+const char* serverIP = "172.20.10.11"; // Adresse IP du serveur ESP32
 const int serverPort = 80; // Port du serveur
 
 // Paramètres OLED
@@ -20,7 +19,7 @@ const int serverPort = 80; // Port du serveur
 // Création de l'affichage OLED
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
-// Paramètres de la clé
+// Paramètres du clavier
 #define O_1 20
 #define O_2 10
 #define O_3 0
@@ -38,12 +37,12 @@ char keys[ROWS][COLS] = {
 };
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
-// Positions et mouvements
-int client_player2_X = 3*SCREEN_WIDTH / 4 ;
+// Positions et mouvements des joueurs et de la balle
+int client_player2_X = 3 * SCREEN_WIDTH / 4;
 int client_player2_Y = SCREEN_HEIGHT / 2;
 
-int server_player1_Y = SCREEN_HEIGHT / 2; // Position du serveur
-int server_player1_X = SCREEN_WIDTH / 4; // Position du serveur
+int server_player1_Y = SCREEN_HEIGHT / 2; // Position du joueur serveur
+int server_player1_X = SCREEN_WIDTH / 4; // Position du joueur serveur
 
 int paddle_size = 5;
 int deltaX = 0;
@@ -52,6 +51,7 @@ uint8_t vitesse_delta = 4;
 
 uint8_t ball_x = 64, ball_y = 32;
 
+// Initialisation
 void setup() {
   Serial.begin(115200);
 
@@ -62,9 +62,25 @@ void setup() {
   display.setTextColor(SSD1306_WHITE);
   display.setCursor(0,0);
 
+  // Connexion au réseau WiFi
+  connectToWiFi();
 
-  WiFi.begin("iPhone de Arthur", "1jusqua8"); // Connectez-vous au même réseau WiFi que le serveur
+  // Connexion au serveur
+  connectToServer();
+}
 
+// Boucle principale
+void loop() {
+  char key = keypad.getKey();
+  processKeypadInput(key);
+  communicateWithServer();
+  updateDisplay();
+  delay(100);
+}
+
+// Connexion au réseau WiFi
+void connectToWiFi() {
+  WiFi.begin("iPhone de Arthur", "1jusqua8");
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
     Serial.println("Connexion au WiFi...");
@@ -73,17 +89,17 @@ void setup() {
     display.print("Connexion WiFi...");
     display.display();
   }
-
   Serial.println("Connecté au réseau WiFi");
   display.clearDisplay();
   display.setCursor(0,0);
   display.print("Connecte a ");
   display.println("iPhone de Arthur");
   display.display();
+  delay(2000);
+}
 
-  delay(2000); // Afficher l'état pendant 2 secondes
-
-  // Connexion au serveur
+// Connexion au serveur
+void connectToServer() {
   Serial.println("Tentative de connexion au serveur...");
   int attempts = 0;
   while (!client.connect(serverIP, serverPort)) {
@@ -97,80 +113,65 @@ void setup() {
 
     delay(1000);
   }
-    
   if (client.connected()) {
     Serial.println("Connecté au serveur !");
   } else {
     Serial.println("Échec de la connexion au serveur !");
   }
-
-  
 }
 
-int num_paquet = 0;
-void loop() {
-  char key = keypad.getKey();
+// Traitement des entrées du clavier
+void processKeypadInput(char key) {
   if (key) {
     switch (key) {
-      case 'U': deltaY = -1*vitesse_delta; deltaX = 0; break;
-      case 'D': deltaY = 1*vitesse_delta; deltaX = 0; break;
-      //case 'L': deltaX = -1; deltaY = 0; break;
-      //case 'R': deltaX = 1; deltaY = 0; break;
+      case 'U': deltaY = -1 * vitesse_delta; deltaX = 0; break;
+      case 'D': deltaY = 1 * vitesse_delta; deltaX = 0; break;
       default: deltaX = 0; deltaY = 0; break;
     }
     client_player2_Y = constrain(client_player2_Y + deltaY, paddle_size, SCREEN_HEIGHT - paddle_size);
   }
-  //x = constrain(x + deltaX, paddle_size, SCREEN_WIDTH - paddle_size);
-  
+}
 
-
-  num_paquet+=1;
+// Communication avec le serveur
+void communicateWithServer() {
+  int num_paquet = 0;
+  num_paquet += 1;
   if (client.connected()) {
     client.print(String(client_player2_Y) + "; num paquet : "+ num_paquet + "\n");
-    //while (client.available()) {
-    //  int data = client.parseInt(); // Lire les données envoyées par le client
-    //  Serial.println(data);
 
     String receivedData = "";
     if (client.available() > 0){
       while (client.available() > 0) {
-        char receivedChar = client.read(); //données recues de l'autre joueur
+        char receivedChar = client.read(); // Données reçues de l'autre joueur
         Serial.print(receivedChar);
-        receivedData += receivedChar; // Ajouter le caractère à la variable
+        receivedData += receivedChar;
       }
     }
 
-    int pos = receivedData.indexOf(";");   //on recupere seulement la donnée Y de l'autre joueur
+    int pos = receivedData.indexOf(";");
     if (pos != -1) {
-    String new_server_player1_Y = receivedData.substring(0, pos); // Extraction de la sous-chaîne après ';'
-    Serial.println(new_server_player1_Y);
-    server_player1_Y = new_server_player1_Y.toInt();
-    receivedData= receivedData.substring(pos + 1);
+      String new_server_player1_Y = receivedData.substring(0, pos);
+      Serial.println(new_server_player1_Y);
+      server_player1_Y = new_server_player1_Y.toInt();
+      receivedData = receivedData.substring(pos + 1);
 
-    pos = receivedData.indexOf(";");
-    String new_ball_Y = receivedData.substring(0, pos); //extraction de la position de la balle X
-    Serial.println(new_ball_Y);
-    ball_y = new_ball_Y.toInt();
-    receivedData= receivedData.substring(pos + 1);
+      pos = receivedData.indexOf(";");
+      String new_ball_Y = receivedData.substring(0, pos); // Extraction de la position de la balle en Y
+      Serial.println(new_ball_Y);
+      ball_y = new_ball_Y.toInt();
+      receivedData = receivedData.substring(pos + 1);
 
-    pos = receivedData.indexOf(";");
-    String new_ball_X = receivedData.substring(0, pos); //extraction de la position de la balle Y
-    Serial.println(new_ball_X);
-    ball_x = new_ball_X.toInt();
-    
+      pos = receivedData.indexOf(";");
+      String new_ball_X = receivedData.substring(0, pos); // Extraction de la position de la balle en X
+      Serial.println(new_ball_X);
+      ball_x = new_ball_X.toInt();
     } 
-    
   } else {
-    //Serial.println("Connexion perdue. Tentative de reconnexion...");
     client.connect(serverIP, serverPort);
   }
-
-  updateDisplay();
-
-  //Serial.println("loop");
-  delay(100);
 }
 
+// Mise à jour de l'affichage
 void updateDisplay() {
   display.clearDisplay();
   display.drawFastVLine(server_player1_X, server_player1_Y, paddle_size, SSD1306_WHITE);
