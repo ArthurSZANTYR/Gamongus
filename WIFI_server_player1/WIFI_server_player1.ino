@@ -3,20 +3,24 @@
 #include <Adafruit_SSD1306.h>
 #include <Keypad.h>
 #include <WiFi.h>
-
+#include <SPI.h>
 // Paramètres OLED
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
 #define SDA_PIN 5
 #define SCL_PIN 6
 #define OLED_RESET -1
-
 // Création du serveur
 WiFiServer server(80);
+
+const char *ssid = "iPhone de Arthur";
+const char *password = "1jusqua8";
+unsigned int localPort = 9999;
 
 // Création de l'affichage OLED
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
 
+void drawCourt();
 // Paramètres de la clé
 #define O_1 20
 #define O_2 10
@@ -43,10 +47,10 @@ int server_player1_Y = SCREEN_HEIGHT / 2;
 int client_player2_X = 3 * SCREEN_WIDTH / 4;
 int client_player2_Y = SCREEN_HEIGHT / 2;  // Position du client - Player 2
 
-int paddle_size = 5;
+int paddle_size = 10;
 int deltaX = 0;
 int deltaY = 0;
-uint8_t vitesse_delta = 4;
+uint8_t vitesse_delta = 8;
 
 uint8_t ball_x = 64, ball_y = 32;
 uint8_t vitesse_ball = 2;
@@ -86,7 +90,8 @@ void loop() {
 
 // Connexion au réseau WiFi
 void connectToWiFi() {
-  WiFi.begin("iPhone de Arthur", "1jusqua8");
+  
+  WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     display.clearDisplay();
     display.setCursor(0, 0);
@@ -104,7 +109,7 @@ void displayIP() {
   display.clearDisplay();
   display.setCursor(0, 0);
   display.print("Connecte a ");
-  display.println("iPhone de Arthur");
+  display.println(ssid);
   display.print("IP: ");
   display.println(IP);
   display.display();
@@ -118,7 +123,7 @@ void processKeypadInput(char key) {
       case 'D': deltaY = 1 * vitesse_delta; deltaX = 0; break;
       default: deltaX = 0; deltaY = 0; break;
     }
-    server_player1_Y = constrain(server_player1_Y + deltaY, paddle_size, SCREEN_HEIGHT - paddle_size);
+    server_player1_Y = constrain(server_player1_Y + deltaY, 1, SCREEN_HEIGHT - paddle_size);
   }
 }
 
@@ -180,5 +185,9 @@ void updateDisplay() {
   display.drawFastVLine(server_player1_X, server_player1_Y, paddle_size, SSD1306_WHITE);
   display.drawFastVLine(client_player2_X, client_player2_Y, paddle_size, SSD1306_WHITE);
   display.drawPixel(ball_x, ball_y, SSD1306_WHITE);
+  drawCourt();
   display.display();
+}
+void drawCourt() {
+    display.drawRect(0, 0, 128, 64, WHITE);
 }
