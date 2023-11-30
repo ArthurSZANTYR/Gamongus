@@ -41,6 +41,9 @@ char keys[ROWS][COLS] = {
 };
 Keypad keypad = Keypad(makeKeymap(keys), rowPins, colPins, ROWS, COLS);
 
+int ScorePlayer1 = 0;
+int ScorePlayer2 = 0;
+
 // Positions et mouvements des joueurs et de la balle
 int client_player2_X = 3 * SCREEN_WIDTH / 4;
 int client_player2_Y = SCREEN_HEIGHT / 2;
@@ -88,13 +91,13 @@ void connectToWiFi() {
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
-    Serial.println("Connexion au WiFi...");
+    //Serial.println("Connexion au WiFi...");
     display.clearDisplay();
     display.setCursor(0,0);
     display.print("Connexion WiFi...");
     display.display();
   }
-  Serial.println("Connecté au réseau WiFi");
+  //Serial.println("Connecté au réseau WiFi");
   display.clearDisplay();
   display.setCursor(0,0);
   display.print("Connecte a ");
@@ -105,11 +108,11 @@ void connectToWiFi() {
 
 // Connexion au serveur
 void connectToServer() {
-  Serial.println("Tentative de connexion au serveur...");
+  //Serial.println("Tentative de connexion au serveur...");
   int attempts = 0;
   while (!client.connect(serverIP, serverPort)) {
-    Serial.println("Impossible de se connecter au serveur !");
-    Serial.println("Nouvelle tentative dans 1 seconde...");
+    //Serial.println("Impossible de se connecter au serveur !");
+    //Serial.println("Nouvelle tentative dans 1 seconde...");
 
     display.clearDisplay();
     display.setCursor(0, 0);
@@ -119,9 +122,9 @@ void connectToServer() {
     delay(1000);
   }
   if (client.connected()) {
-    Serial.println("Connecté au serveur !");
+    //Serial.println("Connecté au serveur !");
   } else {
-    Serial.println("Échec de la connexion au serveur !");
+    //Serial.println("Échec de la connexion au serveur !");
   }
 }
 
@@ -148,7 +151,7 @@ void communicateWithServer() {
     if (client.available() > 0){
       while (client.available() > 0) {
         char receivedChar = client.read(); // Données reçues de l'autre joueur
-        Serial.print(receivedChar);
+        //Serial.print(receivedChar);
         receivedData += receivedChar;
       }
     }
@@ -156,20 +159,30 @@ void communicateWithServer() {
     int pos = receivedData.indexOf(";");
     if (pos != -1) {
       String new_server_player1_Y = receivedData.substring(0, pos);
-      Serial.println(new_server_player1_Y);
+      //Serial.println(new_server_player1_Y);
       server_player1_Y = new_server_player1_Y.toInt();
       receivedData = receivedData.substring(pos + 1);
 
       pos = receivedData.indexOf(";");
       String new_ball_Y = receivedData.substring(0, pos); // Extraction de la position de la balle en Y
-      Serial.println(new_ball_Y);
+      //Serial.println(new_ball_Y);
       ball_y = new_ball_Y.toInt();
       receivedData = receivedData.substring(pos + 1);
 
       pos = receivedData.indexOf(";");
       String new_ball_X = receivedData.substring(0, pos); // Extraction de la position de la balle en X
-      Serial.println(new_ball_X);
+      //Serial.println(new_ball_X);
       ball_x = new_ball_X.toInt();
+      receivedData = receivedData.substring(pos + 1);
+
+      pos = receivedData.indexOf(";");
+      String new_ScorePlayer1 = receivedData.substring(0, pos); //extraction score player1
+      ScorePlayer1 = new_ScorePlayer1.toInt();
+      receivedData = receivedData.substring(pos + 1);
+
+      pos = receivedData.indexOf(";");
+      String new_ScorePlayer2 = receivedData.substring(0, pos); //extraction score player1
+      ScorePlayer2 = new_ScorePlayer1.toInt();
     } 
   } else {
     client.connect(serverIP, serverPort);
@@ -183,8 +196,27 @@ void updateDisplay() {
   display.drawFastVLine(client_player2_X, client_player2_Y, paddle_size, SSD1306_WHITE);
   display.drawPixel(ball_y, ball_x, WHITE);
   drawCourt();
+  displayScore();
   display.display();
 }
 void drawCourt() {
     display.drawRect(0, 0, 128, 64, WHITE);
+}
+
+void displayScore() {
+  // Affichage du score au milieu de l'écran
+  display.setTextSize(2);
+  display.setCursor(SCREEN_WIDTH / 2 - 18, SCREEN_HEIGHT / 2 - 8);
+  display.setTextColor(SSD1306_WHITE);
+  display.print(ScorePlayer1);
+
+  // Affichage de la barre "-" entre les scores
+  display.setTextSize(1);
+  display.setCursor(SCREEN_WIDTH / 2 - 2, SCREEN_HEIGHT / 2 - 4);
+  display.setTextColor(SSD1306_WHITE);
+  display.print("-");
+
+  display.setTextSize(2);
+  display.setCursor(SCREEN_WIDTH / 2 + 6, SCREEN_HEIGHT / 2 - 8);
+  display.print(ScorePlayer2);
 }
