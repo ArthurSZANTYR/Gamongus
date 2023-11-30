@@ -7,7 +7,7 @@ The project required the production of a box using the injection molding process
 
 ### Video Demonstration
 <p align="center">
-  <img src="media/duo1.mp4" alt="Boids Simulation" width="250">
+  <img src="media/duo1.gif" alt="Boids Simulation" width="250">
 </p>
 
 
