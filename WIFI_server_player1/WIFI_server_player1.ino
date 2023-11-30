@@ -19,8 +19,8 @@ unsigned int localPort = 9999;
 
 IPAddress clientIP; // Variable pour stocker l'adresse IP du client découvert
 
-const char *ssid = "iPhone de Arthur";
-const char *password = "1jusqua8";
+const char *ssid = "Your_SSID";
+const char *password = "Your_Password";
 
 
 // Création de l'affichage OLED
@@ -108,15 +108,12 @@ void setup() {
 void loop() {
   char key = keypad.getKey();
   processKeypadInput(key);
+  sendDataToClient();
+  receiveDataFromClient();
+  updateBallPosition();
+  updateDisplay();
+  delay(100);
 
-  //WiFiClient client = server.available();
-  //if (client && client.connected()) {
-    sendDataToClient();
-    receiveDataFromClient();
-    updateBallPosition();
-    updateDisplay();
-    delay(100);
-  //}
 }
 
 // Connexion au réseau WiFi
@@ -172,14 +169,12 @@ void sendDataToClient() {
 // Réception de données depuis le client
 void receiveDataFromClient() {
   int packetSize = udp.parsePacket();
-  Serial.println(udp.remoteIP());
   if (packetSize) {
     char packetData[packetSize + 1];
     udp.read(packetData, packetSize);
     packetData[packetSize] = '\0';
 
-    // Traiter les données reçues du client (packetData)
-    // Exemple : Extraire les informations reçues
+    // Traitement des données reçues du client
     String receivedData = String(packetData);
     int pos = receivedData.indexOf(";");
     if (pos != -1) {
@@ -269,7 +264,5 @@ void discoverIpClient() {
     packetData[packetSize] = '\0';
 
     clientIP = udp.remoteIP();
-    Serial.println(clientIP);
 }
 }
-

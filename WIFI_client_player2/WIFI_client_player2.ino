@@ -6,12 +6,10 @@
 #include <Keypad.h>
 #include <SPI.h>
 // Configuration de la connexion au serveur
-//WiFiClient client;
 const char* serverIP = "172.20.10.11"; // Adresse IP du serveur ESP32
-//const int serverPort = 80; // Port du serveur
 
-const char *ssid = "iPhone de Arthur";
-const char *password = "1jusqua8";
+const char *ssid = "Your_SSID";
+const char *password = "Your_Password";
 WiFiUDP udp;
 unsigned int localPort = 9999;
 
@@ -73,9 +71,6 @@ void setup() {
 
   // Connexion au réseau WiFi
   connectToWiFi();
-
-  // Connexion au serveur
-  //connectToServer();
 }
 
 // Boucle principale
@@ -93,13 +88,11 @@ void connectToWiFi() {
   WiFi.begin(ssid, password);
   while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
-    //Serial.println("Connexion au WiFi...");
     display.clearDisplay();
     display.setCursor(0,0);
     display.print("Connexion WiFi...");
     display.display();
   }
-  //Serial.println("Connecté au réseau WiFi");
   display.clearDisplay();
   display.setCursor(0,0);
   display.print("Connecte a ");
