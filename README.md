@@ -6,11 +6,17 @@ This project was developed as part of the HMAE course in week 3 of the IFT progr
 The project required the production of a box using the injection molding process, enabling two-player wireless gameplay.
 
 ### Video Demonstration
-[Insert link to video demonstration]
+<p align="center">
+  <img src="media/duo1.mp4" alt="Boids Simulation" width="250">
+</p>
+
 
 ## Hardware Used
 - 2 ESP32 DevModules
 - 2 PCB shields equipped with buttons and an SSD1306 OLED Display
+  <p align="center">
+  <img src="media/separated.png" alt="Boids Simulation" width="250">
+</p>
 
 ## Project Structure
 
@@ -20,7 +26,9 @@ The project is structured as follows:
 
 - The `3d` folder contains the molds used for injection printing the Gamongus box. The box design draws inspiration from Among Us aesthetics and the ergonomic design of the Nintendo Switch, featuring removable handles for improved handling.
 
-![3D Image of Gamongus Box](link_to_image)
+<p align="center">
+  <img src="media/3D.png" alt="Boids Simulation" width="250">
+</p>
 
 ## Usage
 These programs run on ESP32 web:
