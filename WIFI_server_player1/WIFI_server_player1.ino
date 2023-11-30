@@ -3,7 +3,10 @@
 #include <Adafruit_SSD1306.h>
 #include <Keypad.h>
 #include <WiFi.h>
+#include <WiFiUdp.h>
+
 #include <SPI.h>
+
 // Paramètres OLED
 #define SCREEN_WIDTH 128
 #define SCREEN_HEIGHT 64
@@ -11,11 +14,14 @@
 #define SCL_PIN 6
 #define OLED_RESET -1
 // Création du serveur
-WiFiServer server(80);
+WiFiUDP udp;
+unsigned int localPort = 9999;
+
+IPAddress clientIP; // Variable pour stocker l'adresse IP du client découvert
 
 const char *ssid = "iPhone de Arthur";
 const char *password = "1jusqua8";
-unsigned int localPort = 9999;
+
 
 // Création de l'affichage OLED
 Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, OLED_RESET);
@@ -95,9 +101,7 @@ void setup() {
   connectToWiFi();
   displayIP();
 
-  server.begin();
-
-
+  udp.begin(9999);
 }
 
 // Boucle principale
@@ -105,14 +109,14 @@ void loop() {
   char key = keypad.getKey();
   processKeypadInput(key);
 
-  WiFiClient client = server.available();
-  if (client && client.connected()) {
-    sendDataToClient(client);
-    receiveDataFromClient(client);
+  //WiFiClient client = server.available();
+  //if (client && client.connected()) {
+    sendDataToClient();
+    receiveDataFromClient();
     updateBallPosition();
     updateDisplay();
     delay(100);
-  }
+  //}
 }
 
 // Connexion au réseau WiFi
@@ -155,25 +159,33 @@ void processKeypadInput(char key) {
 }
 
 // Envoi de données au client
-void sendDataToClient(WiFiClient &client) {
+void sendDataToClient() {
   int num_paquet = 0;
   num_paquet += 1;
-  client.print(String(server_player1_Y) + ";" + String(ball_x) + ";" + String(ball_y) + ";" + String(gameScore.getScorePlayer1()) + ";"+ String(gameScore.getScorePlayer2()) + "; num paquet : " + num_paquet + "\n");
+  String data = String(server_player1_Y) + ";" + String(ball_x) + ";" + String(ball_y) + ";" + String(gameScore.getScorePlayer1()) + ";"+ String(gameScore.getScorePlayer2()) + "; num paquet : " + num_paquet + "\n";
+  
+  udp.beginPacket(udp.remoteIP(), udp.remotePort()); // clientIP et clientPort représentent respectivement l'adresse IP et le port du client
+  udp.print(data);
+  udp.endPacket();
 }
 
 // Réception de données depuis le client
-void receiveDataFromClient(WiFiClient &client) {
-  String receivedData = "";
-  if (client.available() > 0) {
-    while (client.available() > 0) {
-      char receivedChar = client.read();
-      receivedData += receivedChar;
+void receiveDataFromClient() {
+  int packetSize = udp.parsePacket();
+  Serial.println(udp.remoteIP());
+  if (packetSize) {
+    char packetData[packetSize + 1];
+    udp.read(packetData, packetSize);
+    packetData[packetSize] = '\0';
+
+    // Traiter les données reçues du client (packetData)
+    // Exemple : Extraire les informations reçues
+    String receivedData = String(packetData);
+    int pos = receivedData.indexOf(";");
+    if (pos != -1) {
+      String sub = receivedData.substring(0, pos);
+      client_player2_Y = sub.toInt();
     }
-  }
-  int pos = receivedData.indexOf(";");
-  if (pos != -1) {
-    String sub = receivedData.substring(0, pos);
-    client_player2_Y = sub.toInt();
   }
 }
 
@@ -244,5 +256,20 @@ void displayScore() {
   display.print(gameScore.getScorePlayer2());
 }
 
+void discoverIpClient() {
+  udp.beginPacket(IPAddress(255, 255, 255, 255), localPort); // Broadcast sur tous les clients
+  udp.print("Discovery"); // Message de découverte
+  udp.endPacket();
 
+  // Attendre et gérer les réponses
+  int packetSize = udp.parsePacket();
+  if (packetSize) {
+    char packetData[packetSize + 1];
+    udp.read(packetData, packetSize);
+    packetData[packetSize] = '\0';
+
+    clientIP = udp.remoteIP();
+    Serial.println(clientIP);
+}
+}
 

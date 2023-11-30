@@ -1,16 +1,18 @@
 #include <WiFi.h>
+#include <WiFiUdp.h>
 #include <Wire.h>
 #include <Adafruit_GFX.h>
 #include <Adafruit_SSD1306.h>
 #include <Keypad.h>
 #include <SPI.h>
 // Configuration de la connexion au serveur
-WiFiClient client;
+//WiFiClient client;
 const char* serverIP = "172.20.10.11"; // Adresse IP du serveur ESP32
-const int serverPort = 80; // Port du serveur
+//const int serverPort = 80; // Port du serveur
 
 const char *ssid = "iPhone de Arthur";
 const char *password = "1jusqua8";
+WiFiUDP udp;
 unsigned int localPort = 9999;
 
 // Paramètres OLED
@@ -73,7 +75,7 @@ void setup() {
   connectToWiFi();
 
   // Connexion au serveur
-  connectToServer();
+  //connectToServer();
 }
 
 // Boucle principale
@@ -106,27 +108,6 @@ void connectToWiFi() {
   delay(2000);
 }
 
-// Connexion au serveur
-void connectToServer() {
-  //Serial.println("Tentative de connexion au serveur...");
-  int attempts = 0;
-  while (!client.connect(serverIP, serverPort)) {
-    //Serial.println("Impossible de se connecter au serveur !");
-    //Serial.println("Nouvelle tentative dans 1 seconde...");
-
-    display.clearDisplay();
-    display.setCursor(0, 0);
-    display.print("Connexion au serveur...");
-    display.display();
-
-    delay(1000);
-  }
-  if (client.connected()) {
-    //Serial.println("Connecté au serveur !");
-  } else {
-    //Serial.println("Échec de la connexion au serveur !");
-  }
-}
 
 // Traitement des entrées du clavier
 void processKeypadInput(char key) {
@@ -144,50 +125,53 @@ void processKeypadInput(char key) {
 void communicateWithServer() {
   int num_paquet = 0;
   num_paquet += 1;
-  if (client.connected()) {
-    client.print(String(client_player2_Y) + "; num paquet : "+ num_paquet + "\n");
+  if (WiFi.status() == WL_CONNECTED) {
+    String message = String(client_player2_Y) + "; num paquet : "+ num_paquet + "\n";
+    udp.beginPacket(serverIP, 9999);
+    udp.print(message);
+    udp.endPacket();
 
-    String receivedData = "";
-    if (client.available() > 0){
-      while (client.available() > 0) {
-        char receivedChar = client.read(); // Données reçues de l'autre joueur
-        //Serial.print(receivedChar);
-        receivedData += receivedChar;
+    int packetSize = udp.parsePacket();
+    Serial.println(udp.remoteIP());
+    Serial.println(packetSize);
+    if (packetSize) {
+      char packetData[packetSize + 1];
+      udp.read(packetData, packetSize);
+      packetData[packetSize] = '\0';
+
+      String receivedData(packetData);
+      Serial.println(receivedData);
+
+      // Traitement des données reçues du serveur
+      int pos = receivedData.indexOf(";");
+      if (pos != -1) {
+        String new_server_player1_Y = receivedData.substring(0, pos);
+        server_player1_Y = new_server_player1_Y.toInt();
+        receivedData = receivedData.substring(pos + 1);
+
+        pos = receivedData.indexOf(";");
+        String new_ball_Y = receivedData.substring(0, pos); // Extraction de la position de la balle en Y
+        ball_y = new_ball_Y.toInt();
+        receivedData = receivedData.substring(pos + 1);
+
+        pos = receivedData.indexOf(";");
+        String new_ball_X = receivedData.substring(0, pos); // Extraction de la position de la balle en X
+        ball_x = new_ball_X.toInt();
+        receivedData = receivedData.substring(pos + 1);
+
+        pos = receivedData.indexOf(";");
+        String new_ScorePlayer1 = receivedData.substring(0, pos); //extraction score player1
+        ScorePlayer1 = new_ScorePlayer1.toInt();
+        receivedData = receivedData.substring(pos + 1);
+
+        pos = receivedData.indexOf(";");
+        String new_ScorePlayer2 = receivedData.substring(0, pos); //extraction score player1
+        ScorePlayer2 = new_ScorePlayer2.toInt();
       }
     }
-
-    int pos = receivedData.indexOf(";");
-    if (pos != -1) {
-      String new_server_player1_Y = receivedData.substring(0, pos);
-      //Serial.println(new_server_player1_Y);
-      server_player1_Y = new_server_player1_Y.toInt();
-      receivedData = receivedData.substring(pos + 1);
-
-      pos = receivedData.indexOf(";");
-      String new_ball_Y = receivedData.substring(0, pos); // Extraction de la position de la balle en Y
-      //Serial.println(new_ball_Y);
-      ball_y = new_ball_Y.toInt();
-      receivedData = receivedData.substring(pos + 1);
-
-      pos = receivedData.indexOf(";");
-      String new_ball_X = receivedData.substring(0, pos); // Extraction de la position de la balle en X
-      //Serial.println(new_ball_X);
-      ball_x = new_ball_X.toInt();
-      receivedData = receivedData.substring(pos + 1);
-
-      pos = receivedData.indexOf(";");
-      String new_ScorePlayer1 = receivedData.substring(0, pos); //extraction score player1
-      ScorePlayer1 = new_ScorePlayer1.toInt();
-      receivedData = receivedData.substring(pos + 1);
-
-      pos = receivedData.indexOf(";");
-      String new_ScorePlayer2 = receivedData.substring(0, pos); //extraction score player1
-      ScorePlayer2 = new_ScorePlayer1.toInt();
-    } 
-  } else {
-    client.connect(serverIP, serverPort);
   }
 }
+
 
 // Mise à jour de l'affichage
 void updateDisplay() {
