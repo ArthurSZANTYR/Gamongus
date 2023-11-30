@@ -1,54 +1,61 @@
-# Gamongus : Projet Pong Multiplayer
+# Gamongus: A Wireless Multiplayer Gameboy
 
-Ce projet consiste en un jeu Pong multijoueur utilisant une connexion WiFi. Les joueurs contrôlent leur raquette à l'aide de deux boutons et tentent de marquer des points en renvoyant une balle derrière la raquettes adverses.
+## Goals
+This project was developed as part of the HMAE course in week 3 of the IFT program. The objective was to create, build, and code a wireless multiplayer Gameboy.
 
-## Matériel requis
+The project required the production of a box using the injection molding process, enabling two-player wireless gameplay.
 
-- boitier GAMONGUS :
-    -> un PCB avec esp32
-    -> un Shield avec 8 boutons et un écran OLED
-    -> un cable USB C vers USB
+### Video Demonstration
+[Insert link to video demonstration]
 
-## Dépendances
+## Hardware Used
+- 2 ESP32 DevModules
+- 2 PCB shields equipped with buttons and an SSD1306 OLED Display
+
+## Project Structure
+
+The project is structured as follows:
+
+- `WIFI_server_player1` and `WIFI_client_player2` files contain all the necessary code to flash the 2 ESP32 devices. One acts as a server, and the other as a client. Communication between the two ESP devices occurs over WiFi using the UDP protocol, chosen for its speed. A Pong game is implemented for the 2 Gamongus devices.
+
+- The `3d` folder contains the molds used for injection printing the Gamongus box. The box design draws inspiration from Among Us aesthetics and the ergonomic design of the Nintendo Switch, featuring removable handles for improved handling.
+
+![3D Image of Gamongus Box](link_to_image)
+
+## Usage
+These programs run on ESP32 web:
+
+1. Modify the WIFI parameters in the `.ino` files by replacing `SSID` and `SSID_password` with your WiFi network's credentials.
+```cpp
+const char *ssid = "Your_SSID";
+const char *password = "Your_Password";
+```
+
+2. Flash both ESP32 devices with the provided `.ino` code.
+
+3. Turn on both Gamongus devices and wait a moment for them to connect to your WiFi network.
+
+4. Start playing the implemented Pong game and challenge your opponent!
+
+## Dependencies
 
 - [Adafruit GFX Library](https://github.com/adafruit/Adafruit-GFX-Library)
 - [Adafruit SSD1306 Library](https://github.com/adafruit/Adafruit_SSD1306)
 - [Keypad Library](https://github.com/Chris--A/Keypad)
 
-## Branches du projet
+## Main Features
 
-- **main:** Contient le code principal du jeu.
+- WiFi Multiplayer: Allows two players to compete in real-time.
+- Score Display: Each player's score is shown at the center of the screen.
+- Automatic Client Discovery: The server sends a discovery request and retrieves the client's IP address.
+- Ergonomic Box Design for comfortable and uninterrupted gaming sessions.
 
-## Configuration du matériel
+## Authors
 
-- Connectez le cable au port UsbC de la console GAMONGUS
-- Connectez Le cable à un ordinateur munis du logiciel ArduinoIDE
-- telechargez les codes depuis le github
+This project was carried out by:
+- Sébastien LAM
+- Maëlle ROCHE
+- Arthur SZANTYR
 
-## Configuration WiFi
 
-Modifiez les paramètres WiFi en remplaçant les variables `ssid` et `password` par les informations de votre réseau WiFi.
-
-```cpp
-const char *ssid = "Votre_SSID";
-const char *password = "Votre_Mot_de_Passe";
-```
-
-## Démarrage du jeu
-
-1. Chargez le code sur votre Arduino.
-2. Laisser le boitier GAMONGUS brancher
-
-## Fonctionnalités principales
-
-- Multijoueur via WiFi : Permet à deux joueurs de s'affronter en temps réel.
-- Affichage du score : Le score de chaque joueur est affiché au centre de l'écran.
-- Découverte automatique des clients : Le serveur envoie une requête de découverte et récupère l'adresse IP du client.
-
-## Auteur
-
-Ce projet à été réalisé par :
-Sébastien LAM
-Maëlle ROCHE
-Arthur SZANTYR
 
