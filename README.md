@@ -6,10 +6,10 @@ This project was developed as part of the HMAE course in week 3 of the IFT progr
 The project required the production of a box using the injection molding process, enabling two-player wireless gameplay.
 
 ### Video Demonstration
-<p align="left">
+<p align="center">
   <img src="media/duo1.gif" alt="Boids Simulation" width="250">
 </p>
-<p align="right">
+<p align="center">
   <img src="media/Slide motion.gif" alt="Boids Simulation" height="250">
 </p>
 
