@@ -9,7 +9,9 @@ The project required the production of a box using the injection molding process
 <p align="center">
   <img src="media/duo1.gif" alt="Boids Simulation" width="250">
 </p>
-
+<p align="center">
+  <img src="media/Slide motion.gif" alt="Boids Simulation" width="250">
+</p>
 
 ## Hardware Used
 - 2 ESP32 DevModules
