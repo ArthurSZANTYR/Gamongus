@@ -10,7 +10,7 @@ The project required the production of a box using the injection molding process
   <img src="media/duo1.gif" alt="Boids Simulation" width="250">
 </p>
 <p align="right">
-  <img src="media/Slide motion.gif" alt="Boids Simulation" width="250" height="250">
+  <img src="media/Slide motion.gif" alt="Boids Simulation" height="250">
 </p>
 
 ## Hardware Used
